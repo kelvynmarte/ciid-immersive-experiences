@@ -18,6 +18,13 @@ var alphaValues = [];
 var betaValues = [];
 var gammaValues = [];
 
+var zeroIntersection = { "alpha": false, "beta": false, "gamma": false };
+var midIntersection = { "alpha": false, "beta": false, "gamma": false };
+var rotationCount = { "alpha": 0, "beta": 0, "gamma": 0 };
+var increase = { "alpha": 1, "beta": 1, "gamma": 1 };
+
+
+
 var outletOutletDefault = '5';  // the default number of outlets and inlets, if not defined via query string
 var contentTimer
 	, random_id = "000" + Math.floor(Math.random() * 1000)
@@ -52,6 +59,7 @@ var state = {};
     };
     state.names = { "alpha": "rotate flat", "beta": "portrait tilt", "gamma": "landscape tilt" };
 
+
 var debug = debug || qs.debug || false; // flag to identify if debug messages should be output
 
 // customize UI based on whether page is loaded on a mobile device
@@ -84,6 +92,9 @@ function setupSpacebrew (){
 	for (var j in state.elements) {
 		sb.connection.addPublish( state.names[state.elements[j]], "range" );
 	}
+
+	// create the spacebrew subscription channels
+	sb.connection.addPublish("count", "string", "0");	// create the publication feed
 
 	sb.selects.registerSB(sb.connection);
 	// Override Spacebrew events
@@ -135,6 +146,7 @@ var registerMotionEventListeners = function () {
  * @return {none}
  */
 var processEvent = function (data) {
+	var count = 0;
 	var debug = true;
 	var sensor = "gyro";
 	var new_data = false;
@@ -142,12 +154,33 @@ var processEvent = function (data) {
     // loop through each source associated to the current sensor
     for (var p in state.elements) {
 		var part = state.elements[p];
+		count = count + rotationCount[part];
+
 		if (!data[part]) continue; // if data[part] doesn't exist then skip to next part
-		var new_state = data[part]; //mapVal( data[part], state.bounds["low"][part], state.bounds["high"][part], 0, 1024 );
+		var new_state = mapVal( data[part], state.bounds["low"][part], state.bounds["high"][part], 0, 1024 ); // data[part]
 
 		// if the new state is different from state[sensor][part] then update state[sensor][part]
 		if (state[sensor][part] != new_state) {
 			state[sensor][part] = new_state;
+
+			if(inRange(data[part], -4, 4)){
+				zeroIntersection[part] = true;
+			}
+
+			if(inRange(data[part], 80, 90)){
+				midIntersection[part] = true;
+			}
+			if(inRange(data[part], -80, -90)){
+				midIntersection[part] = true;
+			}
+
+			if(zeroIntersection[part] && midIntersection[part]){
+				rotationCount[part] += increase[part];
+				midIntersection[part] = false;
+				zeroIntersection[part] = false;
+			}
+
+
 			// if (debug) console.log("[processEvent] new value for " + sensor + " part " + part + " val " + state[sensor][part] );
 
 			// if connected to spacebrew then send messages
@@ -158,6 +191,15 @@ var processEvent = function (data) {
 			}
 		}
     }
+		if(new_data){
+			count = "0" + count;
+			sb.connection.send("count", "string", count );
+			$("#count span").html(count);
+		}
+}
+
+var inRange = function (value, min, max) {
+	return (value > min) && (value < max);
 }
 
 /**
