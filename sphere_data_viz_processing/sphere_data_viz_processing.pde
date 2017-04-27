@@ -15,7 +15,7 @@ String name="processing";
 String description ="This is an example client which has a red slider you can move from left to right.  It sends values in the range of 0 to 1023.  It also listens for 'currentDistance' events and will move the slider to the new place in the range 0 to 1023.";
 import processing.serial.*;
 
-
+Integer borderWidth = 0;
 Spacebrew c;
 
 // Keep track of our current place in the range
@@ -48,17 +48,34 @@ void draw() {
   }
   
   
+  Integer animationTime = 4000;
+  if(borderWidth > 100 || currentSpeed != 0 ){
+    borderWidth = millis() % 4000;
+    if(borderWidth>4000/2){
+      borderWidth = 4000/2 - (borderWidth%(4000/2));
+    }  
+  }
   background(0);
+  
+  /*fill(255,255,255);
+  ellipseMode(CENTER);  // Set ellipseMode to CENTER
+  ellipse(width/2, height/2, height-296, height-296);  // Draw gray ellipse using CENTER mode*/
+  fill(80);
+  ellipseMode(CENTER);  // Set ellipseMode to CENTER
+  ellipse(width/2, height/2, height-296+(borderWidth/40), height-296+(borderWidth/40));  // Draw gray ellipse using CENTER mode
+  fill(0,0,0);
+  ellipseMode(CENTER);  // Set ellipseMode to CENTER
+  ellipse(width/2, height/2, height-310, height-310);  // Draw gray ellipse using CENTER mode 
   
   // Display the current value of currentDistance
   fill(120);
   textAlign(CENTER, CENTER);
   textSize(width/8);
-  text(count, width/2, (height/2)-(width/6));
+  //text(count, width/2, (height/2)-(width/6));
   fill(255);
   text(Math.round(count*meterPerRotation), width/2, (height/2));
   fill(0,0,255);
-  text(currentSpeed, width/2, (height/2)+(width/6));
+  //text(currentSpeed, width/2, (height/2)+(width/6));
  
 }
 
